@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gestão de Inventário</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+
+  <div class="container mx-auto max-w-2xl p-8 mt-10">
+    
+    <form id="form-produto" class="bg-white p-8 rounded-lg shadow-lg">
+      <h2 class="text-2xl font-bold mb-6 text-gray-800">Cadastrar Novo Produto</h2>
+      <div class="mb-4">
+        <label class="block text-gray-700 text-sm font-bold mb-2" for="nome_produto">Nome do Produto</label>
+        <input class="shadow-sm appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-500" 
+               id="nome_produto" type="text" placeholder="Ex: Resma de Papel A4" required>
+      </div>
+      <div class="mb-4">
+        <label class="block text-gray-700 text-sm font-bold mb-2" for="sku">SKU (Código do Produto)</label>
+        <input class="shadow-sm appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-500" 
+               id="sku" type="text" placeholder="Ex: PAP-00123" required>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+        <div>
+          <label class="block text-gray-700 text-sm font-bold mb-2" for="preco_custo">Preço de Custo (R$)</label>
+          <input class="shadow-sm appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-500" 
+                 id="preco_custo" type="number" step="0.01" placeholder="10.50">
+        </div>
+        <div>
+          <label class="block text-gray-700 text-sm font-bold mb-2" for="preco_venda">Preço de Venda (R$)</label>
+          <input class="shadow-sm appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-500" 
+                 id="preco_venda" type="number" step="0.01" placeholder="19.99">
+        </div>
+        <div>
+          <label class="block text-gray-700 text-sm font-bold mb-2" for="quantidade_estoque">Estoque</label>
+          <input class="shadow-sm appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-500" 
+                 id="quantidade_estoque" type="number" step="1" placeholder="100">
+        </div>
+      </div>
+      <div class="mb-6">
+        <label class="block text-gray-700 text-sm font-bold mb-2" for="fornecedor_id">Fornecedor</label>
+        <select class="shadow-sm appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-500" 
+                id="fornecedor_id" required>
+          <option value="" disabled selected>Carregando fornecedores...</option>
+        </select>
+      </div>
+      <div class="flex items-center justify-end">
+        <button class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline" 
+                type="submit">
+          Cadastrar Produto
+        </button>
+      </div>
+    </form>
+
+    <div class="mt-10 bg-white p-8 rounded-lg shadow-lg">
+      <h2 class="text-2xl font-bold mb-6 text-gray-800">Produtos Cadastrados</h2>
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Produto</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">SKU</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estoque</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Preço Venda</th>
+              <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="tabela-produtos-corpo" class="bg-white divide-y divide-gray-200">
+            </tbody>
+        </table>
+      </div>
+    </div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script> 
+  
+  <script src="../JS/client.js"></script>
+  <script src="../JS/script.js"></script> 
+</body>
+</html>
