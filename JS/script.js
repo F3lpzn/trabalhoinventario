@@ -1,44 +1,52 @@
 // Arquivo: script.js
+
+// Variáveis globais para os elementos do DOM
 let formProduto;
 let selectFornecedores;
 let tabelaProdutosCorpo; 
 
+// Espera o DOM carregar para pegar os elementos
 document.addEventListener('DOMContentLoaded', () => {
     formProduto = document.getElementById('form-produto');
     selectFornecedores = document.getElementById('fornecedor_id');
     tabelaProdutosCorpo = document.getElementById('tabela-produtos-corpo'); 
 
+    // Adiciona o listener de envio do formulário
     if (formProduto) {
         formProduto.addEventListener('submit', cadastrarProduto);
     }
     
+    // Adiciona o listener para cliques na tabela (editar/excluir)
     if (tabelaProdutosCorpo) {
         tabelaProdutosCorpo.addEventListener('click', aoClicarNaTabela);
     }
 });
 
-window.supabase.auth.onAuthStateChange((event, session) => {
+// Verifica o status da autenticação
+// Usa 'window.supabaseClient' (definido no client.js)
+window.supabaseClient.auth.onAuthStateChange((event, session) => {
     if (!session) {
-      window.location.href = 'login.html';
+        // Se não houver sessão (usuário não logado), redireciona para login
+        window.location.href = 'login.html';
     } else {
-      console.log('Usuário logado:', session.user.email);
-      carregarFornecedores();
-      carregarProdutos(); 
+        // Se estiver logado, carrega os dados
+        console.log('Usuário logado:', session.user.email);
+        carregarFornecedores();
+        carregarProdutos(); 
     }
 });
 
 
+// Carrega os fornecedores para o <select>
 async function carregarFornecedores() {
-    const response = await fetch(`${window.supabaseUrl}/rest/v1/fornecedores?select=*`, {
-        method: 'GET',
-        headers: {
-            'apikey': window.supabaseKey // 'apikey' é o suficiente
-        }
-    });
+    // Usa o cliente Supabase em vez de fetch
+    const { data: fornecedores, error } = await window.supabaseClient
+        .from('fornecedores')
+        .select('*');
 
-    if (response.ok) {
-        const fornecedores = await response.json();
-        
+    if (error) {
+        console.error('Erro ao buscar fornecedores:', error);
+    } else {
         selectFornecedores.innerHTML = '<option value="" disabled selected>Selecione um fornecedor</option>';
         fornecedores.forEach((fornecedor) => {
             const option = document.createElement('option');
@@ -46,14 +54,14 @@ async function carregarFornecedores() {
             option.textContent = fornecedor.nome_fornecedor; 
             selectFornecedores.appendChild(option);
         });
-    } else {
-        console.error('Erro ao buscar fornecedores.');
     }
 }
 
+// Cadastra um novo produto no banco
 async function cadastrarProduto(evento) {
-    evento.preventDefault(); 
+    evento.preventDefault(); // Impede o recarregamento da página
 
+    // Pega os dados do formulário
     const dadosProduto = {
         nome_produto: document.getElementById('nome_produto').value,
         sku: document.getElementById('sku').value,
@@ -63,47 +71,43 @@ async function cadastrarProduto(evento) {
         fornecedor_id: document.getElementById('fornecedor_id').value 
     };
 
-    const response = await fetch(`${window.supabaseUrl}/rest/v1/produtos`, {
-        method: 'POST',
-        headers: {
-            'apikey': window.supabaseKey, // 'apikey' é o suficiente
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(dadosProduto) 
-    });
+    // Usa o cliente Supabase para inserir
+    const { data, error } = await window.supabaseClient
+        .from('produtos')
+        .insert([dadosProduto]); // .insert() espera um array de objetos
 
-    if (response.status === 201) { 
-        alert('Produto cadastrado com sucesso!');
-        formProduto.reset(); 
-        carregarProdutos(); 
+    if (error) {
+        console.error('Erro ao cadastrar produto:', error);
+        alert(`Erro ao cadastrar: ${error.message}`);
     } else {
-        const erro = await response.json();
-        console.error('Erro ao cadastrar produto:', erro);
-        alert(`Erro ao cadastrar: ${erro.message}`);
+        alert('Produto cadastrado com sucesso!');
+        formProduto.reset(); // Limpa o formulário
+        carregarProdutos(); // Recarrega a lista de produtos
     }
 }
 
 
+// Carrega a lista de produtos na tabela
 async function carregarProdutos() {
-    const response = await fetch(`${window.supabaseUrl}/rest/v1/produtos?select=*&order=id.desc`, {
-        method: 'GET',
-        headers: {
-            'apikey': window.supabaseKey // 'apikey' é o suficiente
-        }
-    });
+    // Usa o cliente Supabase para buscar os dados
+    const { data: produtos, error } = await window.supabaseClient
+        .from('produtos')
+        .select('*')
+        .order('id', { ascending: false }); // Ordena pelos mais recentes
 
-    if (!response.ok) {
-        console.error('Erro ao buscar produtos.');
+    if (error) {
+        console.error('Erro ao buscar produtos:', error);
         return;
     }
-
-    const produtos = await response.json();
     
+    // Limpa a tabela antes de adicionar os novos dados
     tabelaProdutosCorpo.innerHTML = '';
 
+    // Cria as linhas da tabela para cada produto
     produtos.forEach((produto) => {
         const tr = document.createElement('tr');
         
+        // Formata o preço para Reais (BRL)
         let precoFormatado = 'N/A';
         if (produto.preco_venda) {
             precoFormatado = parseFloat(produto.preco_venda).toLocaleString('pt-BR', {
@@ -128,9 +132,11 @@ async function carregarProdutos() {
 }
 
 
+// Lida com cliques nos botões de editar ou excluir
 function aoClicarNaTabela(evento) {
     const elementoClicado = evento.target; 
 
+    // Verifica se o clique foi no botão excluir
     if (elementoClicado.classList.contains('botao-excluir')) {
         const idProduto = elementoClicado.getAttribute('data-id');
         if (confirm('Tem certeza que deseja excluir este produto?')) {
@@ -138,6 +144,7 @@ function aoClicarNaTabela(evento) {
         }
     }
     
+    // Verifica se o clique foi no botão editar
     if (elementoClicado.classList.contains('botao-editar')) {
         const idProduto = elementoClicado.getAttribute('data-id');
         alert('Função de editar para o ID ' + idProduto + ' ainda não implementada.');
@@ -145,20 +152,19 @@ function aoClicarNaTabela(evento) {
 }
 
 
+// Exclui um produto do banco
 async function excluirProduto(id) {
-    const response = await fetch(`${window.supabaseUrl}/rest/v1/produtos?id=eq.${id}`, {
-        method: 'DELETE',
-        headers: {
-            'apikey': window.supabaseKey // 'apikey' é o suficiente
-        }
-    });
+    // Usa o cliente Supabase para deletar
+    const { data, error } = await window.supabaseClient
+        .from('produtos')
+        .delete()
+        .eq('id', id); // Filtra pelo 'id' que queremos excluir
 
-    if (response.ok || response.status === 204) { 
-        alert('Produto excluído com sucesso!');
-        carregarProdutos(); 
+    if (error) {
+        console.error('Erro ao excluir produto:', error);
+        alert(`Erro ao excluir: ${error.message}`);
     } else {
-        const erro = await response.json();
-        console.error('Erro ao excluir produto:', erro);
-        alert(`Erro ao excluir: ${erro.message}`);
+        alert('Produto excluído com sucesso!');
+        carregarProdutos(); // Recarrega a lista
     }
 }
