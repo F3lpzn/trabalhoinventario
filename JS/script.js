@@ -1,113 +1,153 @@
-// Arquivo: script.js
+// Arquivo: script.js (Versão Final)
 
-// Variáveis globais para os elementos do DOM
+// --- Variáveis Globais ---
 let formProduto;
 let selectFornecedores;
-let tabelaProdutosCorpo; 
+let tabelaProdutosCorpo;
+let h2Form;
+let submitButton;
+let cancelButton;
+let logoutButton;
 
-// Espera o DOM carregar para pegar os elementos
+// --- Inicialização ---
 document.addEventListener('DOMContentLoaded', () => {
+    // 🚨 Esta variável é crucial para o seu dropdown
     formProduto = document.getElementById('form-produto');
     selectFornecedores = document.getElementById('fornecedor_id');
     tabelaProdutosCorpo = document.getElementById('tabela-produtos-corpo'); 
+    
+    h2Form = document.getElementById('h2-form-produto');
+    submitButton = document.getElementById('botao-submit');
+    cancelButton = document.getElementById('botao-cancelar');
+    logoutButton = document.getElementById('botao-logout');
 
-    // Adiciona o listener de envio do formulário
     if (formProduto) {
-        formProduto.addEventListener('submit', cadastrarProduto);
+        formProduto.addEventListener('submit', salvarProduto);
     }
     
-    // Adiciona o listener para cliques na tabela (editar/excluir)
     if (tabelaProdutosCorpo) {
         tabelaProdutosCorpo.addEventListener('click', aoClicarNaTabela);
     }
+
+    if (cancelButton) {
+        cancelButton.addEventListener('click', resetarFormulario);
+    }
+
+    if (logoutButton) {
+        logoutButton.addEventListener('click', handleLogout);
+    }
 });
 
-// Verifica o status da autenticação
-// Usa 'window.supabaseClient' (definido no client.js)
+// --- Autenticação ---
 window.supabaseClient.auth.onAuthStateChange((event, session) => {
     if (!session) {
-        // Se não houver sessão (usuário não logado), redireciona para login
         window.location.href = 'login.html';
     } else {
-        // Se estiver logado, carrega os dados
         console.log('Usuário logado:', session.user.email);
-        carregarFornecedores();
+        carregarFornecedores(); 
         carregarProdutos(); 
     }
 });
 
 
-// Carrega os fornecedores para o <select>
+// --- Funções de Dados (Supabase) ---
+
+/**
+ * Carrega os fornecedores e preenche o dropdown.
+ */
 async function carregarFornecedores() {
-    // Usa o cliente Supabase em vez de fetch
+    // RLS DESATIVADO, busca os dados publicamente
     const { data: fornecedores, error } = await window.supabaseClient
         .from('fornecedores')
         .select('*');
 
     if (error) {
         console.error('Erro ao buscar fornecedores:', error);
+        showToast('Erro ao carregar fornecedores.', 'error');
     } else {
+        // 🚨 LIMPA O SELECT ANTES DE ADICIONAR
         selectFornecedores.innerHTML = '<option value="" disabled selected>Selecione um fornecedor</option>';
+        
         fornecedores.forEach((fornecedor) => {
             const option = document.createElement('option');
             option.value = fornecedor.id; 
             option.textContent = fornecedor.nome_fornecedor; 
             selectFornecedores.appendChild(option);
         });
+        
+        // Adiciona uma opção de aviso se a lista estiver vazia
+        if (fornecedores.length === 0) {
+            selectFornecedores.innerHTML = '<option value="" disabled selected>Nenhum fornecedor cadastrado!</option>';
+        }
     }
 }
 
-// Cadastra um novo produto no banco
-async function cadastrarProduto(evento) {
-    evento.preventDefault(); // Impede o recarregamento da página
-
-    // Pega os dados do formulário
+/**
+ * Salva um Produto (INSERT ou UPDATE).
+ */
+async function salvarProduto(evento) {
+    evento.preventDefault(); 
+    const idParaEditar = formProduto.dataset.editId;
+    
+    // Sem user_id, RLS removido
     const dadosProduto = {
         nome_produto: document.getElementById('nome_produto').value,
         sku: document.getElementById('sku').value,
-        preco_custo: document.getElementById('preco_custo').value,
-        preco_venda: document.getElementById('preco_venda').value,
-        quantidade_estoque: document.getElementById('quantidade_estoque').value,
-        fornecedor_id: document.getElementById('fornecedor_id').value 
+        preco_custo: parseFloat(document.getElementById('preco_custo').value),
+        preco_venda: parseFloat(document.getElementById('preco_venda').value),
+        quantidade_estoque: parseInt(document.getElementById('quantidade_estoque').value, 10),
+        fornecedor_id: document.getElementById('fornecedor_id').value,
     };
 
-    // Usa o cliente Supabase para inserir
-    const { data, error } = await window.supabaseClient
-        .from('produtos')
-        .insert([dadosProduto]); // .insert() espera um array de objetos
+    let error;
+    let successMessage = '';
+
+    if (idParaEditar) {
+        // MODO UPDATE
+        const { error: updateError } = await window.supabaseClient
+            .from('produtos')
+            .update(dadosProduto)
+            .eq('id', idParaEditar);
+        error = updateError;
+        successMessage = 'Produto atualizado com sucesso!';
+    } else {
+        // MODO INSERT
+        const { error: insertError } = await window.supabaseClient
+            .from('produtos')
+            .insert([dadosProduto]);
+        error = insertError;
+        successMessage = 'Produto cadastrado com sucesso!';
+    }
 
     if (error) {
-        console.error('Erro ao cadastrar produto:', error);
-        alert(`Erro ao cadastrar: ${error.message}`);
+        console.error('Erro ao salvar produto:', error);
+        showToast(`Erro ao salvar: ${error.message}`, 'error');
     } else {
-        alert('Produto cadastrado com sucesso!');
-        formProduto.reset(); // Limpa o formulário
-        carregarProdutos(); // Recarrega a lista de produtos
+        showToast(successMessage, 'success');
+        resetarFormulario(); 
+        carregarProdutos(); 
     }
 }
 
-
-// Carrega a lista de produtos na tabela
+/**
+ * Carrega a lista de produtos na tabela
+ */
 async function carregarProdutos() {
-    // Usa o cliente Supabase para buscar os dados
     const { data: produtos, error } = await window.supabaseClient
         .from('produtos')
         .select('*')
-        .order('id', { ascending: false }); // Ordena pelos mais recentes
+        .order('id', { ascending: false }); 
 
     if (error) {
         console.error('Erro ao buscar produtos:', error);
+        showToast('Erro ao carregar produtos.', 'error');
         return;
     }
     
-    // Limpa a tabela antes de adicionar os novos dados
     tabelaProdutosCorpo.innerHTML = '';
-
-    // Cria as linhas da tabela para cada produto
     produtos.forEach((produto) => {
         const tr = document.createElement('tr');
         
-        // Formata o preço para Reais (BRL)
         let precoFormatado = 'N/A';
         if (produto.preco_venda) {
             precoFormatado = parseFloat(produto.preco_venda).toLocaleString('pt-BR', {
@@ -131,40 +171,94 @@ async function carregarProdutos() {
     });
 }
 
-
-// Lida com cliques nos botões de editar ou excluir
-function aoClicarNaTabela(evento) {
-    const elementoClicado = evento.target; 
-
-    // Verifica se o clique foi no botão excluir
-    if (elementoClicado.classList.contains('botao-excluir')) {
-        const idProduto = elementoClicado.getAttribute('data-id');
-        if (confirm('Tem certeza que deseja excluir este produto?')) {
-            excluirProduto(idProduto);
+/**
+ * Funções de Edição/Exclusão
+ */
+async function excluirProduto(id) {
+    const result = await Swal.fire({
+        title: "Tem certeza?",
+        text: "Você não poderá reverter esta ação!",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#3085d6",
+        cancelButtonColor: "#d33",
+        confirmButtonText: "Sim, excluir!",
+        cancelButtonText: "Cancelar"
+    });
+    if (result.isConfirmed) {
+        const { data, error } = await window.supabaseClient.from('produtos').delete().eq('id', id); 
+        if (error) {
+            console.error('Erro ao excluir produto:', error);
+            showToast(`Erro ao excluir: ${error.message}`, 'error');
+        } else {
+            showToast('Produto excluído com sucesso!', 'success');
+            carregarProdutos(); 
         }
-    }
-    
-    // Verifica se o clique foi no botão editar
-    if (elementoClicado.classList.contains('botao-editar')) {
-        const idProduto = elementoClicado.getAttribute('data-id');
-        alert('Função de editar para o ID ' + idProduto + ' ainda não implementada.');
     }
 }
 
-
-// Exclui um produto do banco
-async function excluirProduto(id) {
-    // Usa o cliente Supabase para deletar
-    const { data, error } = await window.supabaseClient
-        .from('produtos')
-        .delete()
-        .eq('id', id); // Filtra pelo 'id' que queremos excluir
-
-    if (error) {
-        console.error('Erro ao excluir produto:', error);
-        alert(`Erro ao excluir: ${error.message}`);
-    } else {
-        alert('Produto excluído com sucesso!');
-        carregarProdutos(); // Recarrega a lista
+function aoClicarNaTabela(evento) {
+    const elementoClicado = evento.target; 
+    if (elementoClicado.classList.contains('botao-excluir')) {
+        const idProduto = elementoClicado.getAttribute('data-id');
+        excluirProduto(idProduto);
     }
+    if (elementoClicado.classList.contains('botao-editar')) {
+        const idProduto = elementoClicado.getAttribute('data-id');
+        carregarDadosParaEdicao(idProduto);
+    }
+}
+
+async function carregarDadosParaEdicao(id) {
+    const { data: produto, error } = await window.supabaseClient.from('produtos').select('*').eq('id', id).single(); 
+    if (error) {
+        console.error(error);
+        showToast('Erro ao carregar dados para edição.', 'error');
+        return;
+    }
+    document.getElementById('nome_produto').value = produto.nome_produto;
+    document.getElementById('sku').value = produto.sku;
+    document.getElementById('preco_custo').value = produto.preco_custo;
+    document.getElementById('preco_venda').value = produto.preco_venda;
+    document.getElementById('quantidade_estoque').value = produto.quantidade_estoque;
+    document.getElementById('fornecedor_id').value = produto.fornecedor_id;
+    formProduto.dataset.editId = id;
+    h2Form.textContent = 'Editar Produto';
+    submitButton.textContent = 'Salvar Alterações';
+    cancelButton.classList.remove('hidden'); 
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function resetarFormulario() {
+    formProduto.reset(); 
+    delete formProduto.dataset.editId; 
+    h2Form.textContent = 'Cadastrar Novo Produto';
+    submitButton.textContent = 'Cadastrar Produto';
+    cancelButton.classList.add('hidden'); 
+}
+
+async function handleLogout() {
+    const { error } = await window.supabaseClient.auth.signOut();
+    if (error) {
+        console.error('Erro ao fazer logout:', error);
+        showToast(`Erro ao sair: ${error.message}`, 'error');
+    }
+}
+
+function showToast(message, type = 'success') {
+    const Toast = Swal.mixin({
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 3000,
+        timerProgressBar: true,
+        didOpen: (toast) => {
+            toast.addEventListener('mouseenter', Swal.stopTimer);
+            toast.addEventListener('mouseleave', Swal.resumeTimer);
+        }
+    });
+    Toast.fire({
+        icon: type,
+        title: message
+    });
 }

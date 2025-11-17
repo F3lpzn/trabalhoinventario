@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fornecedores - Gestão de Inventário</title>
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.10.0/dist/sweetalert2.min.css">
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-gray-100">
+
+  <div class="container mx-auto max-w-2xl px-8 pt-8">
+    <div class="flex justify-between items-center">
+      <a href="index.html" 
+         class="text-indigo-600 hover:text-indigo-800 font-medium">
+        &larr; Voltar para Produtos
+      </a>
+      
+      <button id="botao-logout" 
+              class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
+        Sair
+      </button>
+    </div>
+  </div>
+  <div class="container mx-auto max-w-2xl p-8 pt-4">
+    
+    <form id="form-fornecedor" class="bg-white p-8 rounded-lg shadow-lg">
+      <h2 id="h2-form-fornecedor" class="text-2xl font-bold mb-6 text-gray-800">Cadastrar Novo Fornecedor</h2>
+      <div class="mb-4">
+        <label class="block text-gray-700 text-sm font-bold mb-2" for="nome_fornecedor">Nome do Fornecedor</label>
+        <input class="shadow-sm appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-500" 
+               id="nome_fornecedor" type="text" placeholder="Ex: Papelaria Central" required>
+      </div>
+      
+      <div class="flex items-center justify-end gap-4">
+        <button class="hidden bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline" 
+                type="button" id="botao-cancelar">
+          Cancelar
+        </button>
+        <button class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline" 
+                type="submit" id="botao-submit">
+          Cadastrar Fornecedor
+        </button>
+      </div>
+    </form>
+
+    <div class="mt-10 bg-white p-8 rounded-lg shadow-lg">
+      <h2 class="text-2xl font-bold mb-6 text-gray-800">Fornecedores Cadastrados</h2>
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nome</th>
+              <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="tabela-fornecedores-corpo" class="bg-white divide-y divide-gray-200">
+            </tbody>
+        </table>
+      </div>
+    </div>
+      
+  </div> <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.10.0/dist/sweetalert2.all.min.js"></script>
+  <script src="../JS/client.js"></script>
+  <script src="../JS/fornecedores.js"></script> </body>
+</html>
